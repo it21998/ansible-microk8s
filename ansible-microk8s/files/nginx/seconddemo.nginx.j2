@@ -1,0 +1,14 @@
+server {
+    listen 9000;
+    server_name _;
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location /static/ {
+        root /home/azureuser/devopsSystem/student_management;
+    }
+
+    location / {
+        include proxy_params;
+        proxy_pass http://unix:/home/azureuser/devopsSystem/student_management/student_management.sock;
+    }
+}

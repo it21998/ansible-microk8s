@@ -1,0 +1,24 @@
+user_dir: "/home/azureuser"
+app_port: 5000
+app_user: azureuser
+service:
+  workingdir: "{{user_dir}}/devopsAdmin/student_management"
+  execstart: "{{user_dir}}/devopsAdmin/myvenv/bin/gunicorn --access-logfile - --workers 3 --bind  student_management.wsgi:application"
+
+djangoservice:
+  workingdir: "{{user_dir}}/devopAdmin/student_management"
+  execstart: "{{user_dir}}/devopsAdmin/myvenv/bin/gunicorn --access-logfile - --workers 3 --bind  student_management.wsgi:application"
+
+
+
+app:
+  env:
+    SQLALCHEMY_DATABASE_URI: postgres://myprojectuser:password@localhost:/myproject
+    SQLALCHEMY_TRACK_MODIFICATIONS: False
+    SECRET_KEY: test123
+
+django:
+  env:
+    SECRET_KEY: test123
+    DATABASE_URL: postgres://myprojectuser:password@localhost:/myproject
+

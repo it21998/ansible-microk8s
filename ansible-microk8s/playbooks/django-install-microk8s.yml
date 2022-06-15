@@ -1,0 +1,130 @@
+---
+- hosts: deploymentmicrok8s
+
+  vars:
+    app_dir: "{{user_dir}}/microk8sAdmin"
+    
+    git_repo_url: "https://github.com/it21998/microk8sAdmin.git"
+    git_repo_branch: "main"
+
+  tasks:
+
+  - name: print user_dir
+    debug:
+      msg: "user dir is {{user_dir}}"
+
+  - name: Run whoami without become.
+    command: whoami
+    changed_when: false
+    become: false
+    register: whoami
+
+  - name: Set a fact with the user name.
+    set_fact:
+      login_user: "{{ whoami.stdout }}"
+
+  - name: print user name
+    debug:
+      msg: "login user is {{login_user}}"
+
+  - name: print user dir
+    debug:
+      msg: "login dir is {{user_dir}}"
+
+  - name: ensure github.com is a known host
+    lineinfile:
+      dest: "{{user_dir}}/.ssh/known_hosts"
+      create: yes
+      state: present
+      line: "{{lookup('pipe', 'ssh-keyscan -t rsa github.com')}}"
+      regexp: "^github\\.com"
+
+  - name: clone django project
+    git:
+      repo: "{{git_repo_url}}"
+      version: "{{git_repo_branch}}"
+      clone: yes
+      force: yes
+      dest: "{{app_dir}}"
+    changed_when: true
+  
+
+
+  - name: copy env file
+    shell : "cp {{app_dir}}/student_management/student_management/.env.example {{app_dir}}/student_management/student_management/.env"
+
+  
+  - name: Get my public IP
+    ipify_facts:
+
+  - debug: var=ipify_public_ip
+
+ 
+
+  - name: add ip in django ALLOWED_HOSTS
+    lineinfile:
+      dest: "{{app_dir}}/student_management/student_management/settings.py"
+      regexp: "^ALLOWED_HOSTS ="
+      line: "ALLOWED_HOSTS = ['{{ipify_public_ip}}','127.0.1.1','localhost','10.3.0.4']"
+      state: present
+
+  - name: clone db project
+    git:
+      repo: "https://github.com/it21998/db.git"
+      version: "main"
+      clone: yes
+      force: yes
+      dest: "/home/azureuser/db"
+    changed_when: true
+
+
+  - name: psql deploy_yml
+    command: microk8s.kubectl apply -f k8s/db/postgres-deployment.yaml
+    args:
+      chdir: /home/azureuser/microk8sAdmin
+
+
+
+  - name: psql clip
+    command: microk8s.kubectl apply -f k8s/db/postgres-clip.yaml
+    args:
+      chdir: /home/azureuser/microk8sAdmin
+
+  - name: psql pvc
+    command: microk8s.kubectl apply -f k8s/db/postgres-pvc.yaml
+    args:
+      chdir: /home/azureuser/microk8sAdmin
+  
+  #- name: secret
+   # command: microk8s. kubernets create secret generic pg-user fro-literal=PGUSER=myprojectuser from-literal=PGPASSWORD=password
+   # args:
+   #   chdir: /home/azureuser/microk8sAdmin
+
+  #- name: configmap
+   # command: microk8s.kubectl create configmap django-config --from-env-file=student_management/student_management/.env
+   # args:
+   #   chdir: /home/azureuser/microk8sAdmin
+
+ 
+  - name: dump_sqlfile
+    command: microk8s.kubectl exec -i postgres-59bc9f578f-fd4g9  -- psql -U myprojectuser  -d test_db < /home/azureuser/db/sqlfile.sql
+    args:
+      chdir: /home/azureuser
+
+
+  - name: django deploy_yml
+    command: microk8s.kubectl apply -f k8s/django/django-deployment.yaml
+    args:
+      chdir: /home/azureuser/microk8sAdmin
+
+  - name: django clip
+    command: microk8s.kubectl apply -f k8s/django/django-clip.yaml
+    args:
+      chdir: /home/azureuser/microk8sAdmin
+
+  - name: django pvc
+    command: microk8s.kubectl apply -f k8s/django/django-ingress.yaml
+    args:
+      chdir: /home/azureuser/microk8sAdmin
+
+

@@ -1,0 +1,13 @@
+[Unit]
+Description=gunicorn daemon
+After=network.target
+
+[Service]
+User=azureuser
+Group=www-data
+WorkingDirectory=/home/azureuser/devopsSystem/student_management
+ExecStart=/home/azureuser/devopsSystem/myvenv/bin/gunicorn --access-logfile - --workers 3  --bind unix:/home/azureuser/devopsSystem/student_management/student_management.sock student_management.wsgi:application
+
+
+[Install]
+WantedBy=multi-user.target
