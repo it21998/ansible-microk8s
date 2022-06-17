@@ -42,3 +42,9 @@ deploymentmicrok8s:
 ansible-playbook playbooks/django-install-microk8s.yml
 ansible-playbook playbooks/django2-install-microk8s.yml
 ```
+# Url connections
+```yaml
+django-21998.cloudns.ph #admin
+django2-system.ddns.net #system
+20.216.31.6:30191 #mailhog
+```
